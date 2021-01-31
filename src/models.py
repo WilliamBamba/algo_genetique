@@ -13,9 +13,7 @@ from numpy.core.fromnumeric import shape
 def random_resetting_mutation(phenotype: np.ndarray, password_cracker):
     phenotype_index = random.randint(0, phenotype.shape[0] - 1) 
     phenotype[phenotype_index] = password_cracker.random_domain_val()
-    
-    #print(phenotype)
-    #print("")
+
     return phenotype
 
 
@@ -23,9 +21,7 @@ def random_resetting_mutation(phenotype: np.ndarray, password_cracker):
 def swap_mutation(phenotype: np.ndarray, password_cracker):
     swaps = np.random.randint(0, phenotype.shape[0], size=2)
     phenotype[swaps[0]], phenotype[swaps[1]] = phenotype[swaps[1]], phenotype[swaps[0]]
-    
-    #print(phenotype)
-    #print("")
+
     return phenotype
 
 
@@ -39,49 +35,45 @@ def scramble_mutation():
 def inversion_mutation():
     pass
 
-def close_random_mutation(phenotype: np.ndarray,password_cracker):
+def close_random_mutation(phenotype: np.ndarray,phenotype_domain):
     phenotype_index = random.randint(0, phenotype.shape[0] - 1)
-    rand 
-    phenotype[phenotype_index] = password_cracker.random_domain_val()
+    index = np.where(phenotype_domain == phenotype[phenotype_index])[0][0]
+    rand = random.randint(-3,3)
+    while(index+rand > np.size(phenotype_domain) - 1):
+        rand = random.randint(-3,3)
+    phenotype[phenotype_index] = phenotype_domain[index+rand]
+
+    return phenotype
 
 
 
-# adds or removes  one caracter or both
+
+# adds or removes  one caracter
 def expend_retract_mutation(phenotype: np.ndarray, password_cracker):
     rand = random.random()
-    #print(rand)
+
     if rand <= 0.5 and phenotype.shape[0] > password_cracker.domain_min_size :
-        #print("1")
-        phenotype_index = random.randint(0, phenotype.shape[0] - 1) 
-        #print("bjr")
+        phenotype_index = random.randint(0, phenotype.shape[0] - 1)
         phenotype = np.concatenate([phenotype[:phenotype_index],phenotype[phenotype_index+1:]])
-        #print(phenotype)
-        #print("")
+
         return phenotype
 
-    if rand <=0.5 and phenotype.shape[0] < password_cracker.domain_max_size :
-        #print("2")
+    if rand > 0.5 and phenotype.shape[0] < password_cracker.domain_max_size :
+
         rand_char = random.choice(password_cracker.phenotype_domain)
-        #print("bjr")
         phenotype_index = random.randint(0, phenotype.shape[0] - 1)
         phenotype =  np.concatenate([phenotype[:phenotype_index], [rand_char],phenotype[phenotype_index:]])
-       # print(arr)
-       # print("bjr")
-       # print("")
+
         return phenotype
 
-    elif rand > 0.5:
-        #print("3")
+    else:
         phenotype_index = random.randint(0, phenotype.shape[0] - 1)
-        #print("bjr")
         phenotype = np.concatenate([phenotype[:phenotype_index],phenotype[phenotype_index+1:]])
-        #print(pheno)
-        #print("bjrrr")
+
         rand_char = random.choice(password_cracker.phenotype_domain)
         phenotype_index = random.randint(0, phenotype.shape[0] - 1)
         phenotype = np.concatenate([phenotype[:phenotype_index], [rand_char],phenotype[phenotype_index:]])
-        #print(phenotype)
-        #print("")
+
         return phenotype
 
 # --------------- Crossover algorithms ------------------------
@@ -105,9 +97,6 @@ def multi_point_crossover(parent1, parent2, child1,child2,password_cracker):
   
     mid_p1 = random.randint(0, int(size/2))
     mid_p2 = random.randint(int((size/2))+1, size)
-    #print(mid_p1)
-    #print(mid_p2)
-    #print(mid_p1)
 
     child1 = np.concatenate([parent1[:mid_p1],parent2[mid_p1:mid_p2],parent1[mid_p2:]])
     child2 = np.concatenate([parent2[:mid_p1],parent1[mid_p1:mid_p2],parent2[mid_p2:]])
@@ -159,9 +148,7 @@ class PasswordCracker:
         self.crossover_active = True
 
     def check(self, phenotypes: np.ndarray) -> np.ndarray:
-        #print(phenotypes)
         passwords = [''.join(phenotype) for phenotype in phenotypes]
-        #print(passwords)
         results = np.zeros(len(passwords), dtype=np.float32)
         args = np.concatenate((["./unlock_mac", str(self.student_id)], passwords))
         with subprocess.Popen(args, stdout=subprocess.PIPE) as proc:
@@ -182,8 +169,7 @@ class PasswordCracker:
     def generate_random_phenotypes(self, nb_phenotypes) -> np.ndarray:
         phenotypes_sizes = np.random.randint(low=self.domain_min_size, high=self.domain_max_size + 1, size=nb_phenotypes)
         phenotypes = np.empty(nb_phenotypes, dtype=np.object)
-        #print(nb_phenotypes)
-        #print("Done")
+
         for i, size in enumerate(phenotypes_sizes):
             # replace permet d'avoir des repétitions des chars dans les phenotypes
             phenotypes[i] = np.random.choice(self.phenotype_domain, size=size, replace=True)
@@ -207,52 +193,38 @@ class PasswordCracker:
         return parents
 
     def elitism_selection(self, population: np.ndarray,good_genes_size,bad_genes_size):
-        
-        #print(population)
+
         population_scores = self.check(population)
-        #print(population_scores.shape[0])
         population_indecies = np.arange(0, population.shape[0])
         sorted_population_indecies = np.argsort(-(population_scores))
-        
 
         random_indecies = random.choices(population_indecies,k=bad_genes_size)
-       # print(random_indecies)
         random_pop = population[random_indecies]
         random_scores = population_scores[random_indecies]
-        #print(random_scores)
-        #print("Random")
+
         population = population[sorted_population_indecies]
         good_pop = population[:good_genes_size]
         good_pop_indecies = np.arange(0, good_pop.shape[0])
         good_pop_scores = population_scores[good_pop_indecies]
-        #print(good_pop_scores)
-        #print("Good")
-
 
         result = np.concatenate((good_pop,random_pop))
         result_score = np.concatenate((good_pop_scores,random_scores))
-        #print(result_score)
-        #print("All")
 
         self.record_scores(result_score)
        
         return result
-    #TODO FAIRE COPIE AVANT DE CONTINUER 
-    #TODO  corriger fonctionnement rand ne marche pas sur grand nombreÒ
+
+
     def rank_selection(self,parents):
-        #print("Parent")
-        #print(parents)
+
         parents_scores = self.check(parents)
-        #print("Score")
-        #print(parents_scores)
+
         size = np.size(parents)
         factor = 2/((size)*(size-1))
        
         sorted_population_indecies = np.argsort(parents_scores)
         parents_scores_sorted = parents_scores[sorted_population_indecies]
         parents_sorted = parents[sorted_population_indecies]
-        #parents_sorted_inverses = parents[np.argsort(-(parents_scores))]
-
 
         for i , parent in enumerate(parents_scores_sorted):
             if i == 0:
@@ -260,15 +232,7 @@ class PasswordCracker:
             else : parents_scores_sorted[i] = factor*i + parents_scores_sorted[i-1]    
         
         return random.choices(parents_sorted,parents_scores_sorted,k=2)    
-        """ rand = random.random()
-        #print("Rand")
-        #print(rand)
 
-        for i , parent in enumerate(parents_scores_sorted):
-            if(rand <= parent):
-                #print((size-1)-i)
-                #print(parents_sorted_inverses[(size-1)-i])
-                return parents_sorted_inverses[(size-1)-i] """
     
 
         
@@ -279,7 +243,9 @@ class PasswordCracker:
         if random.random() < self.chance_swap_mutation:
             return swap_mutation(phenotype, self)
         elif random.random() < self.chance_resetting:
+
             return random_resetting_mutation(phenotype, self)
+
         elif random.random() < self.chance_expend:
             return expend_retract_mutation(phenotype, self)
         else: 
@@ -288,42 +254,40 @@ class PasswordCracker:
     def crossover(self, parent: np.ndarray, other_parent: np.ndarray, x: int):
         child1 = np.copy(parent)
         child2 = np.copy(other_parent)
-        
-        # if random.random() <= 0.99:
+
         if(x == 1):
             child1,child2 = uniform_crossover(parent, other_parent, child1,child2,self)
         elif (x == 2):    
             child1,child2 = multi_point_crossover(parent, other_parent,child1,child2,self)
-        # else:
-        # child1, child2 = one_point_crossover(parent, other_parent, child1, child2, self)
 
         return child1, child2
 
     def next_gen(self, parents,size):
-        #print(self.phenotype_domain[5])
-        #print(parents.shape[0])
-        #print(self.rank_selection(parents))
-        new_population = np.empty((size - parents.shape[0]), dtype=np.object)
-        #print(new_population.shape[0])
+        new_population = np.empty((parents.shape[0] * 2) - 2, dtype=np.object)
         chi = 0
         x= 1
         desired_len = size - np.size(parents)
-        while chi <desired_len:
-            #parent,other_parent = self.rank_selection(parents)
-            parent,other_parent = self.select_parents(parents)
+
+
+
+        # while chi <desired_len:
+        #     #parent,other_parent = self.rank_selection(parents)
+        #     parent,other_parent = self.rank_selection(parents)
+        for i, parent in enumerate(parents):
+            if i >= parents.shape[0] - 1:
+                continue
+
+            other_parent = parents[i + 1]
             if(self.crossover_active):
                 child1, child2 = self.crossover(parent, other_parent,x)
-                #print(child1)
-                #print(child2)
-            else:    
+            else:
+
                 child1,child2 = self.crossover(parent,other_parent,3)
-                #print(child1)
-                #print(child2)    
 
             if(x==1):
                 x=2
             else :
-                x=1    
+                x=1
 
             try:
                 child1 = self.mutations(child1)
@@ -340,10 +304,9 @@ class PasswordCracker:
             chi += 1
             new_population[chi] = child2
             chi += 1
-            #print("CHI " + str(chi))
-        #print(new_population)
         parents = np.concatenate([parents,new_population])
         return parents
+
 
     def print_infos(self, parents, population, step):
         scores = self.check(parents)
@@ -369,8 +332,6 @@ class PasswordCracker:
         start = time.time()
 
         while True:
-            #self.select_parents(population,10)
-            #print(population.shape[0])
             parents = self.elitism_selection(population, int(self.good_genes_keep*init_population_size),int(self.bad_genes_keep*init_population_size))
 
             if self.step % interval == 0:
