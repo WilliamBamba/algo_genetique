@@ -150,7 +150,7 @@ class PasswordCracker:
     def check(self, phenotypes: np.ndarray) -> np.ndarray:
         passwords = [''.join(phenotype) for phenotype in phenotypes]
         results = np.zeros(len(passwords), dtype=np.float32)
-        args = np.concatenate((["./unlock_mac", str(self.student_id)], passwords))
+        args = np.concatenate((["./unlock", str(self.student_id)], passwords))
         with subprocess.Popen(args, stdout=subprocess.PIPE) as proc:
             i = 0
             while True:
